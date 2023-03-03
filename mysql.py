@@ -45,8 +45,10 @@ class MySQLInventory(object):
 
         self.inventory = dict()  # A list of groups and the hosts in that group
         self.cache = dict()  # Details about hosts in the inventory
+        self.ignore_settings = False  # used to only look at env vars for settings.
 
-        # Read settings and parse CLI arguments
+        # Read env vars, read settings, and parse CLI arguments
+        self.parse_env_vars()
         self.read_settings()
         self.parse_cli_args()
 
@@ -91,6 +93,9 @@ class MySQLInventory(object):
     def read_settings(self):
         """ Reads the settings from the mysql.ini file """
 
+        if(self.ignore_settings):
+            return
+
         config = configparser.ConfigParser()
         config.read(os.path.dirname(os.path.realpath(__file__)) + '/mysql.ini')
 
@@ -106,6 +111,44 @@ class MySQLInventory(object):
 
         # Other config
         self.facts_hostname_var = config.get('config', 'facts_hostname_var')
+
+    def parse_env_vars(self):
+        """ Reads the settings from the environment """
+
+        # Env. Vars:
+        #   MYSQL_HOST
+        #   MYSQL_PORT
+        #   MYSQL_USER
+        #   MYSQL_PASSWORD
+        #   MYSQL_DATABASE
+        #   MYSQL_CACHE_PATH
+        #   MYSQL_CACHE_MAX_AGE
+        #   MYSQL_HOSTNAME_VAR
+        #   MYSQL_IGNORE_SETTINGS
+
+        self.mysql_host = os.getenv('MYSQL_HOST', None)
+        self.mysql_port = os.getenv('MYSQL_PORT', None)
+        self.mysql_user = os.getenv('MYSQL_USER', None)
+        self.mysql_password = os.getenv('MYSQL_PASSWORD', None)
+        self.mysql_database = os.getenv('MYSQL_DATABASE', None)
+
+        self.myconfig = {'host': self.mysql_host, 'user': self.mysql_user, 'passwd': self.mysql_password, 'db': self.mysql_database, 'port': int(self.mysql_port)}
+
+        # Cache related
+        cache_path = os.getenv('MYSQL_CACHE_PATH', None)
+        if(cache_path is not None):
+            self.cache_path_cache = cache_path + "/ansible-mysql.cache"
+            self.cache_path_inventory = cache_path + "/ansible-mysql.index"
+
+        self.cache_max_age = int(os.getenv('MYSQL_CACHE_MAX_AGE', "0"))
+
+        # Other config
+        self.facts_hostname_var = os.getenv('MYSQL_HOSTNAME_VAR', None)
+
+        # ignore_settings is used to ignore the settings file, for use in Ansible
+        # Tower (or AWX inventory scripts and not throw python exceptions.)
+        if(os.getenv('MYSQL_IGNORE_SETTINGS', False) == "True"):
+            self.ignore_settings = True
 
     def parse_cli_args(self):
         """ Command line argument processing """
