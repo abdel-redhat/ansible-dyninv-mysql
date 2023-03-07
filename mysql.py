@@ -229,8 +229,13 @@ class MySQLInventory(object):
 
         # cleanup output
         for group in self.inventory:
-            if not self.inventory[group]['hosts']:
-                del self.inventory[group]['hosts']
+            if isinstance(self.inventory[group], dict):
+                if not self.inventory[group]['hosts']:
+                    del self.inventory[group]['hosts']
+
+            if isinstance(self.inventory[group], list):
+                if not self.inventory[group]:
+                    del self.inventory[group]
 
         self.write_to_cache(self.cache, self.cache_path_cache)
         self.write_to_cache(self.inventory, self.cache_path_inventory)
