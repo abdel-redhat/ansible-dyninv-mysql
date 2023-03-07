@@ -131,8 +131,9 @@ class MySQLInventory(object):
         self.mysql_user = os.getenv('MYSQL_USER', None)
         self.mysql_password = os.getenv('MYSQL_PASSWORD', None)
         self.mysql_database = os.getenv('MYSQL_DATABASE', None)
-
-        self.myconfig = {'host': self.mysql_host, 'user': self.mysql_user, 'passwd': self.mysql_password, 'db': self.mysql_database, 'port': int(self.mysql_port)}
+        
+        if(self.mysql_host is not None):
+            self.myconfig = {'host': self.mysql_host, 'user': self.mysql_user, 'passwd': self.mysql_password, 'db': self.mysql_database, 'port': int(self.mysql_port)}
 
         # Cache related
         cache_path = os.getenv('MYSQL_CACHE_PATH', None)
